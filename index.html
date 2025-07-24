@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+   <script>
+    // Asynchronously load Google Maps API with places and marker libraries
+    (function () {
+      const script = document.createElement('script');
+      script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCpqwHfjScaSL3dAC1g8mLd_4MoMxUg2K4&libraries=places,marker&callback=initMap';
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => {
+        console.error('Failed to load Google Maps API');
+        window.googleMapsLoadError = true;
+        window.dispatchEvent(new Event('googleMapsLoaded'));
+      };
+      window.initMap = function () {
+        window.googleMapsLoaded = true;
+        window.dispatchEvent(new Event('googleMapsLoaded'));
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
