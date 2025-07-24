@@ -12,7 +12,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@zxing/library": "^0.21.3",
+    "axios": "^1.11.0",
     "framer-motion": "^12.23.7",
+    "gsap": "^3.13.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",

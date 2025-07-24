@@ -1,14 +1,17 @@
-import { Routes, Route } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion'; // Still used for overall page transitions if desired
 import TabBar from './components/TabBar';
 import Home from './pages/Home';
 import ChargingDetail from './pages/ChargingDetail';
 import QRScan from './pages/QRScan';
 import Record from './pages/Record';
 import Profile from './pages/Profile';
-import { Component } from 'react'; // Keep this if you're using class components for ErrorBoundary
+import Auth from './pages/Auth';
+import { Component } from 'react';
+import { useState, useEffect } from 'react';
 
-// ErrorBoundary remains the same
+// No need to import useScrollHide anymore
+
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
 
@@ -36,13 +39,27 @@ class ErrorBoundary extends Component {
 }
 
 const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsAuthenticated(!!localStorage.getItem('token'));
+    };
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen bg-white"> {/* Changed bg-emerald-100 to bg-white for consistency */}
+    // Crucial: Remove 'h-screen' and 'overflow-y-auto' from the main div and its child.
+    // The <body> or <html> element (controlled by global CSS) should now be scrollable.
+    // This allows window.scrollY to correctly reflect the overall page scroll.
+    <div className="flex flex-col min-h-screen bg-white"> {/* Use min-h-screen to ensure content dictates height */}
       <motion.div
-        className="flex-1 overflow-y-auto" // Let flex-1 manage height based on content
+        className="flex-1" // Remove overflow-y-auto here
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
+        // No ref needed here as TabBar listens to window scroll
       >
         <Routes>
           <Route
@@ -53,13 +70,48 @@ const App = () => {
               </ErrorBoundary>
             }
           />
-          <Route path="/charging-detail/:id?" element={<ChargingDetail />} />
-          <Route path="/qr-scan" element={<QRScan />} />
-          <Route path="/record" element={<Record />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/charging-detail/:id?"
+            element={
+              <ErrorBoundary>
+                {isAuthenticated ? <ChargingDetail /> : <Navigate to="/auth/signin" />}
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/qr-scan"
+            element={
+              <ErrorBoundary>
+                {isAuthenticated ? <QRScan /> : <Navigate to="/auth/signin" />}
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/record"
+            element={
+              <ErrorBoundary>
+                {isAuthenticated ? <Record /> : <Navigate to="/auth/signin" />}
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ErrorBoundary>
+                {isAuthenticated ? <Profile setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/auth/signin" />}
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/auth/:mode"
+            element={<Auth setIsAuthenticated={setIsAuthenticated} />}
+          />
+          <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/auth/signin"} />} />
         </Routes>
+        {/* Add padding at the bottom for content to clear the tab bar when it's visible */}
+        <div style={{ height: '70px', minHeight: '70px' }}></div>
       </motion.div>
-      <TabBar /> {/* TabBar remains outside the Routes, at the bottom */}
+      <TabBar /> {/* No prop needed */}
     </div>
   );
 };

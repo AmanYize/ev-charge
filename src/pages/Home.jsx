@@ -41,6 +41,7 @@ const Home = () => {
           zoom: 13,
           mapId: 'YOUR_MAP_ID', // Replace with your Map ID
           disableDefaultUI: true,
+          gestureHandling: 'greedy',
           styles: [
             { featureType: 'poi', stylers: [{ visibility: 'off' }] },
             { featureType: 'transit', stylers: [{ visibility: 'off' }] },
@@ -272,7 +273,15 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white text-gray-800 font-sans">
+    <div className="flex flex-col h-full bg-white text-gray-800 font-sans"
+     style={{
+    height: '100vh', // <--- Add a fixed height here
+    // or, if you want it to fill remaining space in a flex column parent:
+    // flexGrow: 1, height: 'auto', minHeight: '300px'
+    borderRadius: '8px', // Good for maps
+    overflow: 'hidden' // Prevents map controls from spilling out
+  }}
+    >
       {/* Top Search and Filter Bar */}
       <motion.div
         className="sticky top-0 z-20 bg-white p-4 pb-3 shadow-md"
