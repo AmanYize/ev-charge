@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { signup, signin } from '../services/api';
 
@@ -14,25 +14,58 @@ const Auth = ({ setIsAuthenticated }) => {
     password: '',
     confirmPassword: '',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const phoneInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear field-specific error when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.phoneNumber) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Phone number must be 10 digits';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+    }
+
+    if (mode === 'signup') {
+      if (!formData.firstName) newErrors.firstName = 'First name is required';
+      if (!formData.lastName) newErrors.lastName = 'Last name is required';
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
+    return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setGlobalError('');
+    setErrors({});
+    setIsLoading(true);
 
-    if (mode === 'signup') {
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      if (formData.password.length < 8) {
-        setError('Password must be at least 8 characters long');
-        return;
-      }
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setIsLoading(false);
+      // Focus the first invalid field
+      if (validationErrors.phoneNumber) phoneInputRef.current.focus();
+      else if (validationErrors.password) passwordInputRef.current.focus();
+      return;
     }
 
     try {
@@ -47,9 +80,10 @@ const Auth = ({ setIsAuthenticated }) => {
         if (data.statusCode === 201) {
           navigate('/auth/signin');
         } else if (data.statusCode === 409) {
-          setError('Phone number already exists');
+          setErrors({ phoneNumber: 'Phone number already exists' });
+          phoneInputRef.current.focus();
         } else {
-          setError('Signup failed. Please try again.');
+          setGlobalError('Signup failed. Please try again.');
         }
       } else if (mode === 'signin') {
         const { data } = await signin({
@@ -63,12 +97,19 @@ const Auth = ({ setIsAuthenticated }) => {
           setIsAuthenticated(true);
           navigate('/profile');
         } else {
-          setError('Invalid phone number or password');
+          setErrors({ phoneNumber: 'Invalid phone number or password' });
+          phoneInputRef.current.focus();
         }
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+      setGlobalError(error.response?.data?.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const dismissGlobalError = () => {
+    setGlobalError('');
   };
 
   return (
@@ -82,8 +123,20 @@ const Auth = ({ setIsAuthenticated }) => {
         <h2 className="text-2xl font-extrabold text-gray-800 mb-4">
           {mode === 'signup' ? 'Sign Up' : 'Sign In'}
         </h2>
-        {error && (
-          <p className="text-red-500 mb-4">{error}</p>
+        {globalError && (
+          <div
+            className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg flex justify-between items-center"
+            role="alert"
+          >
+            <span>{globalError}</span>
+            <button
+              onClick={dismissGlobalError}
+              className="text-red-700 hover:text-red-900"
+              aria-label="Dismiss error"
+            >
+              &times;
+            </button>
+          </div>
         )}
         <div className="mb-4">
           <button
@@ -93,89 +146,137 @@ const Auth = ({ setIsAuthenticated }) => {
             {mode === 'signup' ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
           </button>
         </div>
-        <div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-gray-700">Phone Number</label>
-              <input
-                type="text"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded-lg"
-                placeholder="0941420279"
-              />
-            </div>
-            {mode === 'signup' && (
-              <>
-                <div>
-                  <label className="block text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg"
-                    placeholder="Michael"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700">Middle Name</label>
-                  <input
-                    type="text"
-                    name="middleName"
-                    value={formData.middleName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg"
-                    placeholder="Abebe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg"
-                    placeholder="Tesfaye"
-                  />
-                </div>
-              </>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700">Phone Number</label>
+            <input
+              type="text"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleInputChange}
+              className={`w-full p-2 border rounded-lg ${
+                errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="0941420279"
+              ref={phoneInputRef}
+              aria-invalid={!!errors.phoneNumber}
+              aria-describedby={errors.phoneNumber ? 'phoneNumber-error' : undefined}
+            />
+            {errors.phoneNumber && (
+              <p id="phoneNumber-error" className="text-red-500 text-sm mt-1">
+                {errors.phoneNumber}
+              </p>
             )}
-            <div>
-              <label className="block text-gray-700">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded-lg"
-                placeholder="********"
-              />
-            </div>
-            {mode === 'signup' && (
+          </div>
+          {mode === 'signup' && (
+            <>
               <div>
-                <label className="block text-gray-700">Confirm Password</label>
+                <label className="block text-gray-700">First Name</label>
                 <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleInputChange}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="********"
+                  className={`w-full p-2 border rounded-lg ${
+                    errors.firstName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Michael"
+                  aria-invalid={!!errors.firstName}
+                  aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                />
+                {errors.firstName && (
+                  <p id="firstName-error" className="text-red-500 text-sm mt-1">
+                    {errors.firstName}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-gray-700">Middle Name</label>
+                <input
+                  type="text"
+                  name="middleName"
+                  value={formData.middleName}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border rounded-lg border-gray-300"
+                  placeholder="Abebe"
                 />
               </div>
+              <div>
+                <label className="block text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded-lg ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Tesfaye"
+                  aria-invalid={!!errors.lastName}
+                  aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                />
+                {errors.lastName && (
+                  <p id="lastName-error" className="text-red-500 text-sm mt-1">
+                    {errors.lastName}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+          <div>
+            <label className="block text-gray-700">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              className={`w-full p-2 border rounded-lg ${
+                errors.password ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="********"
+              ref={passwordInputRef}
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'password-error' : undefined}
+            />
+            {errors.password && (
+              <p id="password-error" className="text-red-500 text-sm mt-1">
+                {errors.password}
+              </p>
             )}
-            <motion.button
-              onClick={handleSubmit}
-              className="w-full px-6 py-3 bg-gradient-to-br from-green-300 to-teal-400 text-white rounded-lg text-lg font-bold shadow-md hover:from-green-400 hover:to-teal-500 transition-all duration-300 active:scale-95"
-              whileTap={{ scale: 0.95 }}
-            >
-              {mode === 'signup' ? 'Sign Up' : 'Sign In'}
-            </motion.button>
           </div>
-        </div>
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-gray-700">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className={`w-full p-2 border rounded-lg ${
+                  errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="********"
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
+              />
+              {errors.confirmPassword && (
+                <p id="confirmPassword-error" className="text-red-500 text-sm mt-1">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
+          )}
+          <motion.button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full px-6 py-3 bg-gradient-to-br from-green-300 to-teal-400 text-white rounded-lg text-lg font-bold shadow-md hover:from-green-400 hover:to-teal-500 transition-all duration-300 active:scale-95 ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            whileTap={{ scale: isLoading ? 1 : 0.95 }}
+          >
+            {isLoading ? 'Processing...' : mode === 'signup' ? 'Sign Up' : 'Sign In'}
+          </motion.button>
+        </form>
       </div>
     </motion.div>
   );
