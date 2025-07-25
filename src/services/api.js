@@ -1,14 +1,10 @@
 import axios from 'axios';
-import https from 'https';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BASE_API_URL || 'https://196.189.126.55:9300/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false, // WARNING: Disables SSL certificate validation (development only)
-  }),
 });
 
 api.interceptors.request.use(
