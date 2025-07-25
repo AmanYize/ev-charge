@@ -33,12 +33,12 @@ const Auth = ({ setIsAuthenticated }) => {
       localStorageAvailable: !!window.localStorage,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
+      online: navigator.onLine,
     });
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    // Trim input to avoid mobile keyboard issues
     const cleanedValue = value.trim();
     setFormData({ ...formData, [name]: cleanedValue });
     setErrors((prev) => ({ ...prev, [name]: '' }));
@@ -145,10 +145,22 @@ const Auth = ({ setIsAuthenticated }) => {
         }
       }
     } catch (error) {
-      console.error('API error:', error);
-      const errorMessage =
-        error.response?.data?.message ||
-        (error.code === 'ERR_NETWORK' ? 'Network error. Please check your connection.' : 'An unexpected error occurred.');
+      console.error('API error:', {
+        message: error.message,
+        code: error.code,
+        response: error.response,
+        request: error.request,
+      });
+      let errorMessage = 'An unexpected error occurred.';
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again with a stable connection.';
+      } else if (error.response?.status === 0) {
+        errorMessage = 'CORS error or server unreachable. Please try again later.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
       setGlobalError(errorMessage);
     } finally {
       setIsLoading(false);
