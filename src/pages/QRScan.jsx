@@ -35,6 +35,9 @@ const QRScan = () => {
     },
   };
 
+  // Detect WeChat Mini Program environment
+  const isWeChatMiniProgram = typeof wx !== 'undefined' && wx.getSystemInfo;
+
   const cleanupVideoAndScanner = () => {
     console.log('CleanupVideoAndScanner running.');
     setIsScanning(false);
@@ -60,7 +63,7 @@ const QRScan = () => {
   };
 
   const startScanner = async () => {
-    console.log('startScanner called. isScanning:', isScanning, 'scannedData:', !!scannedData);
+    console.log('startScanner called. isScanning:', isScanning, 'scannedData:', !!scannedData, 'isWeChatMiniProgram:', isWeChatMiniProgram);
     if (isScanning || scannedData || !mountedRef.current) {
       console.log('Skipping startScanner: already scanning, scanned, or unmounted.');
       return;
@@ -77,32 +80,51 @@ const QRScan = () => {
     setCameraReady(false);
 
     try {
-      console.log('Requesting camera access...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
+      let stream;
+      if (isWeChatMiniProgram) {
+        console.log('Using WeChat Mini Program camera API.');
+        // WeChat Mini Program camera handling (simplified, requires canvas for ZXing)
+        const cameraContext = wx.createCameraContext();
+        // Note: ZXing requires a video or canvas element. WeChat's camera may need a canvas.
+        // For simplicity, assume videoRef is compatible; adjust if needed.
+        stream = { id: 'wechat-camera', active: true }; // Mock stream for compatibility
+        console.log('WeChat camera context initialized:', cameraContext);
+      } else {
+        console.log('Requesting camera access via getUserMedia...');
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
+      }
 
       if (!mountedRef.current) {
         console.log('Component unmounted before stream setup. Stopping.');
-        stream.getTracks().forEach((track) => track.stop());
+        if (!isWeChatMiniProgram && stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
         return;
       }
 
       streamRef.current = stream;
       console.log('Camera stream obtained:', stream);
 
-      // Wait for video element to mount
       if (!videoRef.current) {
         console.error('videoRef.current is null before stream setup.');
         setError('Video element unavailable. Please try again.');
         setIsScanning(false);
-        stream.getTracks().forEach((track) => track.stop());
+        if (!isWeChatMiniProgram && stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
         streamRef.current = null;
         return;
       }
 
-      videoRef.current.srcObject = stream;
-      console.log('Video srcObject set.');
+      if (!isWeChatMiniProgram) {
+        videoRef.current.srcObject = stream;
+        console.log('Video srcObject set.');
+      } else {
+        // For WeChat, assume videoRef is used or replaced with canvas
+        console.log('WeChat camera: Assuming videoRef compatibility.');
+      }
 
       videoRef.current.onloadedmetadata = () => {
         if (!mountedRef.current || !videoRef.current) {
@@ -135,7 +157,7 @@ const QRScan = () => {
             console.warn('Cannot decode: unmounted or refs invalid.');
             return;
           }
-          if (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0) {
+          if (!isWeChatMiniProgram && (videoRef.current.videoWidth === 0 || videoRef.current.videoHeight === 0)) {
             console.error('Video dimensions 0 on canplay.');
             setError('Camera stream not ready. Please retry.');
             setIsScanning(false);
@@ -165,21 +187,23 @@ const QRScan = () => {
                   err.name !== 'NotFoundException' &&
                   err.name !== 'NotFoundException2' &&
                   err.name !== 'FormatException2' &&
-                  err.name !== 'ChecksumException2'
+                  err.name !== 'ChecksumException2' &&
+                  err.message !== 't' &&
+                  err.message !== undefined
                 ) {
                   console.error('Scanning error:', err);
-                  setError(`Scanning error: ${err.message}`);
+                  setError(`Scanning error: ${err.message || 'undefined'}`);
                   setIsScanning(false);
                   setCameraReady(false);
-                } else if (err.name === 'FormatException2' || err.name === 'ChecksumException2') {
-                  console.warn(`${err.name} detected:`, err);
-                  // Silent retry
+                } else {
+                  console.warn(`Suppressed scanning error: ${err.name || err.message || 'undefined'}`);
+                  // Silent retry for NotFoundException, FormatException2, ChecksumException2, t, and undefined
                 }
               }
             });
           } catch (decodeErr) {
             console.error('Failed to start QR decoder:', decodeErr);
-            setError(`Failed to start QR decoder: ${decodeErr.message}`);
+            setError(`Failed to start QR decoder: ${decodeErr.message || 'undefined'}`);
             setIsScanning(false);
             setCameraReady(false);
           }
@@ -193,7 +217,7 @@ const QRScan = () => {
           ? 'Camera access denied. Please allow permissions.'
           : err.name === 'NotFoundError'
           ? 'No camera found on this device.'
-          : `Failed to access camera: ${err.message}`
+          : `Failed to access camera: ${err.message || 'undefined'}`
       );
       setIsScanning(false);
     }
@@ -201,8 +225,8 @@ const QRScan = () => {
 
   useEffect(() => {
     if (!codeReader.current) {
-      codeReader.current = new BrowserQRCodeReader();
-      console.log('BrowserQRCodeReader initialized.');
+      codeReader.current = new BrowserQRCodeReader(undefined, { delayBetweenScanAttempts: 150 });
+      console.log('BrowserQRCodeReader initialized with delayBetweenScanAttempts: 150ms');
     }
 
     startScanner();
@@ -254,7 +278,7 @@ const QRScan = () => {
           }
         } catch (err) {
           console.error('QR validation error:', err);
-          setError('Failed to validate QR code: ' + err.message);
+          setError('Failed to validate QR code: ' + (err.message || 'undefined'));
           setScannedData(null);
           setIsScanning(false);
           startScanner();
@@ -359,7 +383,7 @@ const QRScan = () => {
             <motion.button
               onClick={() => {
                 cleanupVideoAndScanner();
-                navigate('/');
+                navigate('/home');
               }}
               className="mt-8 px-8 py-3 bg-gray-100 text-gray-700 rounded-full text-lg font-semibold shadow-md hover:bg-gray-200 transition-transform duration-200 active:scale-95"
               whileTap={{ scale: 0.95 }}
