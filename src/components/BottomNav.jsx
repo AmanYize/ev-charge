@@ -1,29 +1,28 @@
-import React, { useEffect, useRef, useState } from 'react'; // Import useRef and useState
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { motion } from 'framer-motion'; // Keep Framer Motion for internal tab animations
+import { motion } from 'framer-motion';
 import { FaHome, FaBolt, FaQrcode, FaHistory, FaUser } from 'react-icons/fa';
-import { gsap } from 'gsap'; // Import GSAP
+import { gsap } from 'gsap';
 
 const tabs = [
-  { path: '/', icon: <FaHome /> },
-  // { path: '/charging-detail', icon: <FaBolt /> },
-  { path: '/qr-scan', icon: <FaQrcode /> },
-  { path: '/record', icon: <FaHistory /> },
-  { path: '/profile', icon: <FaUser /> },
+  { path: '/', icon: <FaHome />, title: 'Home' },
+  { path: '/charging-detail', icon: <FaBolt />, title: 'Charging' }, // Added title
+  { path: '/qr-scan', icon: <FaQrcode />, title: 'Scan QR' },
+  { path: '/record', icon: <FaHistory />, title: 'History' },
+  { path: '/profile', icon: <FaUser />, title: 'Profile' },
 ];
 
-const TabBar = () => {
-  const tabBarRef = useRef(null); // Ref for the tab bar div
+const BottomNav = () => {
+  const bottomNavRef = useRef(null);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
-  const initialLoadHandled = useRef(false); // To prevent initial fade-in on refresh
+  const initialLoadHandled = useRef(false);
 
-  // Initial animation for the tab bar on mount
+  // Initial animation for the bottom nav on mount
   useEffect(() => {
-    // Only run initial animation if not already handled (e.g., on route change)
     if (!initialLoadHandled.current) {
       gsap.fromTo(
-        tabBarRef.current,
+        bottomNavRef.current,
         { y: 100, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.2 }
       );
@@ -31,36 +30,31 @@ const TabBar = () => {
     }
   }, []);
 
-  // Scroll Logic for TabBar Visibility
+  // Scroll Logic for BottomNav Visibility
   useEffect(() => {
     const handleScroll = () => {
-      // Get current scroll position
       const currentScrollY = window.scrollY;
-      const scrollThreshold = 50; // Pixels to scroll before hiding/showing
+      const scrollThreshold = 50;
 
       if (currentScrollY > lastScrollY.current && currentScrollY > scrollThreshold) {
-        // Scrolling down and past an initial threshold
         if (isVisible) {
-          // Animate out
-          gsap.to(tabBarRef.current, {
-            y: tabBarRef.current.offsetHeight + 20, // Move completely off screen + a little more
+          gsap.to(bottomNavRef.current, {
+            y: bottomNavRef.current.offsetHeight + 20,
             opacity: 0,
             duration: 0.4,
             ease: 'power3.in',
-            overwrite: true // Prevent conflicting animations
+            overwrite: true,
           });
           setIsVisible(false);
         }
       } else if (currentScrollY < lastScrollY.current) {
-        // Scrolling up
         if (!isVisible) {
-          // Animate in
-          gsap.to(tabBarRef.current, {
+          gsap.to(bottomNavRef.current, {
             y: 0,
             opacity: 1,
             duration: 0.4,
             ease: 'power3.out',
-            overwrite: true // Prevent conflicting animations
+            overwrite: true,
           });
           setIsVisible(true);
         }
@@ -73,14 +67,15 @@ const TabBar = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isVisible]); // Re-run effect if isVisible changes to ensure animation triggers correctly
+  }, [isVisible]);
 
   return (
     <motion.div
-      ref={tabBarRef} // Attach the ref here
+      ref={bottomNavRef}
       className="fixed bottom-0 left-0 right-0 z-40
                  flex justify-around py-4 px-2
-                 rounded-t-3xl border-t border-gray-300 backdrop-blur-xl bg-white/40 mt-16"
+                 rounded-t-3xl border-t border-gray-300 backdrop-blur-xl bg-white/40 mt-16
+                 md:hidden" // Hide on medium and large screens
     >
       {tabs.map((tab) => (
         <NavLink
@@ -90,7 +85,7 @@ const TabBar = () => {
             `relative flex items-center justify-center p-3 sm:p-4 rounded-full transition-all duration-300 ease-out group
              ${isActive ? 'text-white' : 'text-gray-600'}`
           }
-          aria-label={`Maps to ${tab.path.substring(1) || 'Home'}`}
+          aria-label={`Maps to ${tab.title || 'Home'}`}
         >
           {({ isActive }) => (
             <>
@@ -121,4 +116,4 @@ const TabBar = () => {
   );
 };
 
-export default TabBar;
+export default BottomNav;
