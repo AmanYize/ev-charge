@@ -14,15 +14,20 @@ const ChargingDetail = () => {
     navigate('/');
   };
 
+  const handleScanQr = () => {
+    navigate('/qr-scan');
+  };
+
   if (!siteId || !gunId) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-red-600">
-        <p className="text-xl font-semibold">Invalid charging details.</p>
+      <div className="flex flex-col items-center justify-center h-screen text-gray-800">
+        <p className="text-xl font-semibold mb-4">No charging data available.</p>
+        <p className="text-lg mb-8">Please scan a QR code to begin charging.</p>
         <button
-          onClick={handleClose}
-          className="mt-4 px-6 py-3 bg-gradient-to-br from-green-300 to-teal-400 text-white rounded-full text-lg font-bold"
+          onClick={handleScanQr}
+          className="px-8 py-4 bg-gradient-to-br from-green-400 to-teal-500 text-white rounded-full text-xl font-bold shadow-lg transform hover:scale-105 transition-transform duration-300"
         >
-          Return to Home
+          Scan QR to Start
         </button>
       </div>
     );

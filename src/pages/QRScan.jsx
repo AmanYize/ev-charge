@@ -359,7 +359,7 @@ const QRScan = () => {
             <motion.button
               onClick={() => {
                 cleanupVideoAndScanner();
-                navigate('/home');
+                navigate('/');
               }}
               className="mt-8 px-8 py-3 bg-gray-100 text-gray-700 rounded-full text-lg font-semibold shadow-md hover:bg-gray-200 transition-transform duration-200 active:scale-95"
               whileTap={{ scale: 0.95 }}

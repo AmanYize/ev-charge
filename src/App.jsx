@@ -25,7 +25,7 @@ class ErrorBoundary extends React.Component {
           <p className="text-gray-600">{this.state.error?.message || 'Unknown error'}</p>
           <button
             onClick={() => {
-              window.location.href = '/home';
+              window.location.href = '/';
             }}
             className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg"
           >
@@ -89,6 +89,14 @@ const App = () => {
               </ErrorBoundary>
             }
           />
+             <Route
+            path="/charging-detail"
+            element={
+              <ErrorBoundary>
+                {isAuthenticated ? <ChargingDetail /> : <Navigate to="/auth/signin" />}
+              </ErrorBoundary>
+            }
+          />
           <Route
             path="/qr-scan"
             element={
@@ -117,7 +125,7 @@ const App = () => {
             path="/auth/:mode"
             element={<Auth setIsAuthenticated={setIsAuthenticated} />}
           />
-          <Route path="*" element={<Navigate to={isAuthenticated ? "/home" : "/auth/signin"} />} />
+          <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/auth/signin"} />} />
         </Routes>
         <div className="md:hidden" style={{ height: '70px', minHeight: '70px' }}></div>
       </motion.div>
