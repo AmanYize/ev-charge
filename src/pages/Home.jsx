@@ -658,7 +658,7 @@ const Home = () => {
         {selectedStation && !selectedGun && (
           <motion.div
             key="station-details-overlay"
-            className="fixed inset-x-0 bottom-0 bg-white p-4 sm:p-6 md:p-8 lg:p-10 pt-6 sm:pt-8 md:pt-10 rounded-t-3xl shadow-2xl z-30 max-h-[80vh] sm:max-h-[85vh] md:max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto scrollbar-thin scrollbar-thumb-emerald-500 scrollbar-track-gray-100 overscroll-contain"
+            className="fixed inset-x-0 bottom-0 bg-white p-4 sm:p-6 md:p-8 lg:p-10 pt-6 sm:pt-8 md:pt-10 rounded-t-3xl shadow-2xl z-50 max-h-[80vh] sm:max-h-[85vh] md:max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto scrollbar-thin scrollbar-thumb-emerald-500 scrollbar-track-gray-100 overscroll-contain"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 70px)' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
@@ -827,7 +827,7 @@ const Home = () => {
         {selectedGun && selectedStation && (
           <motion.div
             key="gun-details-overlay"
-            className="fixed inset-x-0 bottom-0 bg-white p-4 sm:p-6 md:p-8 lg:p-10 pt-6 sm:pt-8 md:pt-10 rounded-t-3xl shadow-2xl z-30 max-h-[80vh] sm:max-h-[85vh] md:max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto scrollbar-thin scrollbar-thumb-emerald-500 scrollbar-track-gray-100 overscroll-contain"
+            className="fixed inset-x-0 bottom-0 bg-white p-4 sm:p-6 md:p-8 lg:p-10 pt-6 sm:pt-8 md:pt-10 rounded-t-3xl shadow-2xl z-50 max-h-[80vh] sm:max-h-[85vh] md:max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto scrollbar-thin scrollbar-thumb-emerald-500 scrollbar-track-gray-100 overscroll-contain"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 70px)' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}

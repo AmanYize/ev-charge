@@ -1,0 +1,7 @@
+{
+  "name": "guba_ev",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
